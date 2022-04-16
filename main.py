@@ -73,10 +73,6 @@ def work_with_false_pairs():
                                   video_2_file["landmarks2D"],
                                   video_2_file["boundingBox"])
 
-        # summary_info = [video_1_info, video_2_info]
-        # hp.create_summary_info(DIRECTORY_FOR_SAVE, "ALL/", directory_name, "SUMMARY", "", summary_info)
-
-
 
 work_with_true_pairs()
 work_with_false_pairs()
