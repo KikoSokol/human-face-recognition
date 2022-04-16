@@ -44,21 +44,28 @@ def get_center_eyes(img, landmarks):
     eye_landmarks = hp.get_eye_landmarks(landmarks)
 
     # Print dot in edges of eyes
-    for eye_land in eye_landmarks:
-        for dot in hp.create_dot_big_dot(eye_land):
-            img[int(dot[1])][int(dot[0])] = [0, 0, 255]
+    # for eye_land in eye_landmarks:
+    #     for dot in hp.create_dot_big_dot(eye_land):
+    #         img[int(dot[1])][int(dot[0])] = [0, 0, 255]
 
     # Print computed center of eyes
     center_left = hp.get_center_eye(eye_landmarks[0], eye_landmarks[1])
     center_right = hp.get_center_eye(eye_landmarks[2], eye_landmarks[3])
 
-    for i in hp.create_dot_big_dot(center_left):
-        img[i[1]][i[0]] = [0, 255, 0]
-
-    for i in hp.create_dot_big_dot(center_right):
-        img[i[1]][i[0]] = [0, 255, 0]
+    # for i in hp.create_dot_big_dot(center_left):
+    #     img[i[1]][i[0]] = [0, 255, 0]
+    #
+    # for i in hp.create_dot_big_dot(center_right):
+    #     img[i[1]][i[0]] = [0, 255, 0]
 
     return img, (center_left, center_right)
+
+
+def get_nose(img, landmarks):
+    nose = hp.get_nose_landmark(landmarks)
+    img[int(nose[1])][int(nose[0])] = [0, 255, 0]
+
+    return img
 
 
 def get_center_eyes_float(landmarks):
@@ -86,6 +93,39 @@ def euclidean_distance(a, b):
     return math.sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)))
 
 
+# def get_rotate(center_eyes):
+#     left_eye = center_eyes[0]
+#     right_eye = center_eyes[1]
+#
+#     left_y = left_eye[1]
+#     left_x = left_eye[0]
+#
+#     right_y = right_eye[1]
+#     right_x = right_eye[0]
+#
+#     if left_y > right_y:
+#         point = (right_x, left_y)
+#         direction = -1
+#     else:
+#         point = (left_x, right_y)
+#         direction = 1
+#
+#     a = abs(right_y - left_y)
+#     b = abs(right_x - left_x)
+#     c = math.sqrt((a * a) + (b * b))
+#
+#     cos_a = (b * b + c * c - a * a) / (2 * b * c)
+#
+#     angle = np.arccos(cos_a)
+#
+#     angle = (angle * 180) / math.pi
+#
+#     if direction == -1:
+#         angle = -angle
+#
+#     return angle
+
+
 def get_rotate(center_eyes):
     left_eye = center_eyes[0]
     right_eye = center_eyes[1]
@@ -103,9 +143,9 @@ def get_rotate(center_eyes):
         point = (left_x, right_y)
         direction = 1
 
-    a = abs(right_y - left_y)
-    b = abs(right_x - left_x)
-    c = math.sqrt((a*a) + (b*b))
+    a = euclidean_distance((left_x, left_y), point)
+    b = euclidean_distance((right_x, right_y), (left_x, left_y))
+    c = euclidean_distance((right_x, right_y), point)
 
     cos_a = (b * b + c * c - a * a) / (2 * b * c)
 
@@ -114,14 +154,61 @@ def get_rotate(center_eyes):
     angle = (angle * 180) / math.pi
 
     if direction == -1:
-        angle = -angle
+        angle = 90 - angle
 
-    return angle
+    return direction * angle, (a, b, c)
+
+
+def cut_image(img, nose, image_size, width, height):
+    upper_left_point_x = int(nose[0]) - int(width / 2)
+    upper_left_point_y = int(nose[1]) - int(height / 2)
+
+    if upper_left_point_y < 0:
+        upper_left_point_y = 0
+
+    if upper_left_point_x < 0:
+        upper_left_point_x = 0
+
+    down_left_point_y = upper_left_point_y + (height - 1)
+    upper_right_point_x = upper_left_point_x + (width - 1)
+
+    if down_left_point_y > (image_size[1] - 1):
+        down_left_point_y = image_size[1] - 1
+
+    if upper_right_point_x > (image_size[0] - 1):
+        upper_right_point_x = image_size[0] - 1
+
+    img = img[upper_left_point_y:down_left_point_y, upper_left_point_x:upper_right_point_x]
+
+    return img
+
+
+def cut_face_according_eyes(img, image_size, center_eyes, center_eyes_distance, rotation_matrix):
+    left_center_eye = center_eyes[0]
+    right_center_eye = center_eyes[1]
+
+    left_center_eye_new_x, left_center_eye_new_y = cv2.transform(np.array([[[left_center_eye[0], left_center_eye[1]]]]),
+                                                                 rotation_matrix).squeeze()
+
+    right_center_eye_new_x, right_center_eye_new_y = cv2.transform(
+        np.array([[[right_center_eye[0], right_center_eye[1]]]]),
+        rotation_matrix).squeeze()
+
+    upper_y = int(left_center_eye_new_y - center_eyes_distance)
+    down_y = int(left_center_eye_new_y + (center_eyes_distance * 2))
+
+    left_x = int(left_center_eye_new_x - center_eyes_distance)
+    right_x = int(right_center_eye_new_x + center_eyes_distance)
+
+    img = img[upper_y:down_y, left_x:right_x]
+
+    return img
 
 
 def to_mp4(main_directory, directory, name, type, video, landmarks, bounding_box):
     final_name = hp.create_directory_and_get_file_name(main_directory, DIRECTORY_ALL, directory, name, type)
     frameSize = (video.shape[1], video.shape[0])
+    # print("Frame size:", frameSize)
 
     # out = cv2.VideoWriter(final_name, cv2.VideoWriter_fourcc(*'mp4v'), 25, frameSize, True)
 
@@ -130,36 +217,96 @@ def to_mp4(main_directory, directory, name, type, video, landmarks, bounding_box
     all_viola_precision = []
     all_viola_recall = []
 
+    # video.shape[3]
+    # for i in range(1):
     for i in range(video.shape[3]):
         img = video[:, :, :, i]
 
         landmark_image = landmarks[:, :, i]
-        bounding_box_image = bounding_box[:, :, i]
+        # bounding_box_image = bounding_box[:, :, i]
 
-        faces_viola = detect_viola(img)
+        # faces_viola = detect_viola(img)
 
         img, center_eyes = get_center_eyes(img, landmark_image)
+        center_eyes_int = center_eyes
         center_eyes = get_center_eyes_float(landmark_image)
-        print(center_eyes)
-        rot = get_rotate(center_eyes)
+        # print(center_eyes)
+        rot, distances_eyes = get_rotate(center_eyes)
 
-        new_image = Image.fromarray(img)
-        img = np.array(new_image.rotate(rot))
+        # new_image = Image.fromarray(img)
+        # img = np.array(new_image.rotate(rot))
 
-        img, info_data_viola = find_faces_viola(img, faces_viola, bounding_box_image, landmark_image)
-        all_info_data_viola.append(info_data_viola)
+        center = (frameSize[0] / 2, frameSize[1] / 2)
+        rot_matrix = cv2.getRotationMatrix2D(center, rot, 1)
+        img = cv2.warpAffine(img, rot_matrix, (frameSize[0], frameSize[1]))
 
-        all_viola_precision.append(info_data_viola[3])
-        all_viola_recall.append(info_data_viola[4])
+        # img, info_data_viola = find_faces_viola(img, faces_viola, bounding_box_image, landmark_image)
+        # all_info_data_viola.append(info_data_viola)
 
-        img = hp.add_landmarks(landmark_image, img, [0, 0, 255])
-        img = hp.add_bounding_box(bounding_box_image, img, [0, 255, 0])
+        # all_viola_precision.append(info_data_viola[3])
+        # all_viola_recall.append(info_data_viola[4])
+
+        # img = hp.add_landmarks(landmark_image, img, [0, 0, 255])
+        # img = hp.add_bounding_box(bounding_box_image, img, [0, 255, 0])
+        # img = get_nose(img, landmark_image)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # out.write(img)
-        cv2.imwrite(hp.create_directory_and_get_file_name_img(main_directory, DIRECTORY_ALL, directory, name, str(i)), img)
+        # img = cut_image(img, hp.get_nose_landmark(landmark_image), frameSize, 100, 100)
+        img = cut_face_according_eyes(img, frameSize, center_eyes_int, distances_eyes[1], rot_matrix)
+        img = cv2.resize(img, (100, 100))
+        cv2.imwrite(hp.create_directory_and_get_file_name_img(main_directory, DIRECTORY_ALL, directory, name, str(i)),
+                    img)
 
     hp.create_info_file(main_directory, DIRECTORY_ALL, directory, name, type + "_viola", all_info_data_viola)
 
     # out.release()
 
-
+# def to_mp4(main_directory, directory, name, type, video, landmarks, bounding_box):
+#     final_name = hp.create_directory_and_get_file_name(main_directory, DIRECTORY_ALL, directory, name, type)
+#     frameSize = (video.shape[1], video.shape[0])
+#     print("Frame size:", frameSize)
+#
+#     # out = cv2.VideoWriter(final_name, cv2.VideoWriter_fourcc(*'mp4v'), 25, frameSize, True)
+#
+#     all_info_data_viola = []
+#
+#     all_viola_precision = []
+#     all_viola_recall = []
+#
+#     # video.shape[3]
+#     # for i in range(1):
+#     for i in range(video.shape[3]):
+#         img = video[:, :, :, i]
+#
+#         landmark_image = landmarks[:, :, i]
+#         bounding_box_image = bounding_box[:, :, i]
+#
+#         faces_viola = detect_viola(img)
+#
+#         img, center_eyes = get_center_eyes(img, landmark_image)
+#         center_eyes_int = center_eyes
+#         center_eyes = get_center_eyes_float(landmark_image)
+#         print(center_eyes)
+#         rot, distances_eyes = get_rotate(center_eyes)
+#
+#         new_image = Image.fromarray(img)
+#         img = np.array(new_image.rotate(rot))
+#
+#         img, info_data_viola = find_faces_viola(img, faces_viola, bounding_box_image, landmark_image)
+#         all_info_data_viola.append(info_data_viola)
+#
+#         all_viola_precision.append(info_data_viola[3])
+#         all_viola_recall.append(info_data_viola[4])
+#
+#         img = hp.add_landmarks(landmark_image, img, [0, 0, 255])
+#         img = hp.add_bounding_box(bounding_box_image, img, [0, 255, 0])
+#         img = get_nose(img, landmark_image)
+#         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#         # out.write(img)
+#         # img = cut_image(img, hp.get_nose_landmark(landmark_image), frameSize, 100, 100)
+#         cv2.imwrite(hp.create_directory_and_get_file_name_img(main_directory, DIRECTORY_ALL, directory, name, str(i)),
+#                     img)
+#
+#     hp.create_info_file(main_directory, DIRECTORY_ALL, directory, name, type + "_viola", all_info_data_viola)
+#
+#     # out.release()

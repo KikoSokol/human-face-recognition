@@ -40,6 +40,10 @@ def get_eye_landmarks(landmarks):
     return lands
 
 
+def get_nose_landmark(landmarks):
+    return landmarks[29]
+
+
 def get_center_eye(first, second):
     x_tmp = abs(first[1] - second[1]) / 2
     if second[1] > first[1]:
