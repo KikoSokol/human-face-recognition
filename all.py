@@ -186,4 +186,4 @@ def to_mp4(main_directory, directory, name, type, video, landmarks, bounding_box
         cv2.imwrite(hp.create_directory_and_get_file_name_img(main_directory, DIRECTORY_ALL, directory, name, str(i)),
                     img)
 
-    hp.create_info_file(main_directory, DIRECTORY_ALL, directory, name, type + "_viola", all_info_data_viola)
+    # hp.create_info_file(main_directory, DIRECTORY_ALL, directory, name, type + "_viola", all_info_data_viola)
