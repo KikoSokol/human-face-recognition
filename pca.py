@@ -50,7 +50,6 @@ def get_image(name):
     return img
 
 
-
 def get_data_for_pca(directory):
     pair_one_img = []
     pair_one_labels = []
