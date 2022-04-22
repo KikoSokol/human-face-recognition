@@ -19,23 +19,28 @@ def get_directory(path):
     return directory
 
 
-def get_files_without_average(path):
+def get_files_without_average(path, random_image):
     files = []
     for filename in os.listdir(path):
         if "AVERAGE" not in filename:
             files.append(path + filename)
 
-    for i in files:
-        print(i)
+    # for i in files:
+    #     print(i)
+
+    if random_image:
+        random_file = random.randint(0, len(files) - 1)
+        return [files[random_file]]
+
     return files
 
 
-def get_images_without_average(directory):
+def get_images_without_average(directory, random_image):
     img_dict = {}
 
-    image_files = get_files_without_average(directory)
+    image_files = get_files_without_average(directory, random_image)
 
-    for i in range(0, min(10, len(image_files))):
+    for i in range(0, min(len(image_files), len(image_files))):
         image = image_files[i]
         img = Image.open(image)
         img = asarray(img)
@@ -58,7 +63,7 @@ def compute_distances(pair1_videos, pair2_videos, image_weights, weights):
     return distances
 
 
-def compare_without_average(directories, image_weights, weights):
+def compare_without_average(directories, image_weights, weights, random_image):
     all_distances = []
 
     for pair_directory in get_directory(directories):
@@ -68,8 +73,8 @@ def compare_without_average(directories, image_weights, weights):
 
         pair1 = pairs_directory[0]
         pair2 = pairs_directory[1]
-        pair1_videos = get_images_without_average(pair1)
-        pair2_videos = get_images_without_average(pair2)
+        pair1_videos = get_images_without_average(pair1, random_image)
+        pair2_videos = get_images_without_average(pair2, random_image)
         all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights, weights))
 
     return all_distances
@@ -121,11 +126,11 @@ def compare_average(directories, image_weights, weights):
     return all_distances
 
 
-def distance_without_average():
+def distance_without_average(random_image):
     image_weights, weights = p.get_pca_weights()
 
-    distances_true = compare_without_average(DIRECTORY_TRUE, image_weights, weights)
-    distances_false = compare_without_average(DIRECTORY_FALSE, image_weights, weights)
+    distances_true = compare_without_average(DIRECTORY_TRUE, image_weights, weights, random_image)
+    distances_false = compare_without_average(DIRECTORY_FALSE, image_weights, weights, random_image)
 
     return distances_true, distances_false
 
@@ -180,9 +185,10 @@ def compute_roc_data(distances):
     return trasholds, tprs, fprs
 
 
-def show_roc(roc_data_all, roc_data_average):
+def show_roc(roc_data_all, roc_data_average, roc_data_random):
     plt.figure()
     lw = 2
+    # ALL
     plt.plot(
         roc_data_all[2],
         roc_data_all[1],
@@ -191,10 +197,20 @@ def show_roc(roc_data_all, roc_data_average):
         # label="ROC curve (area = %0.2f)" % roc_auc[2],
     )
 
+    # AVERAGE
     plt.plot(
         roc_data_average[2],
         roc_data_average[1],
         color="navy",
+        lw=lw,
+        # label="ROC curve (area = %0.2f)" % roc_auc[2],
+    )
+
+    # RANDOM
+    plt.plot(
+        roc_data_random[2],
+        roc_data_random[1],
+        color="red",
         lw=lw,
         # label="ROC curve (area = %0.2f)" % roc_auc[2],
     )
@@ -209,4 +225,9 @@ def show_roc(roc_data_all, roc_data_average):
     plt.show()
 
 
-show_roc(compute_roc_data(distance_without_average()), compute_roc_data(distance_average()))
+all = compute_roc_data(distance_without_average(False))
+average = compute_roc_data(distance_average())
+random_image = compute_roc_data(distance_without_average(True))
+
+
+show_roc(all, average, random_image)
