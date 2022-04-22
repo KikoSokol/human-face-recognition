@@ -61,4 +61,4 @@ def do_hog(directories):
 def get_hog_weights():
     directories = [DIRECTORY_TRUE, DIRECTORY_FALSE]
 
-    return do_hog(directories), 0
+    return do_hog(directories)

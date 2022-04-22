@@ -48,7 +48,7 @@ def get_images_without_average(directory, random_image):
     return img_dict
 
 
-def compute_distances(pair1_videos, pair2_videos, image_weights, weights):
+def compute_distances(pair1_videos, pair2_videos, image_weights):
     distances = []
 
     for file_name_1, img1 in pair1_videos.items():
@@ -60,7 +60,7 @@ def compute_distances(pair1_videos, pair2_videos, image_weights, weights):
     return distances
 
 
-def compare_without_average(directories, image_weights, weights, random_image):
+def compare_without_average(directories, image_weights, random_image):
     all_distances = []
 
     for pair_directory in get_directory(directories):
@@ -72,7 +72,7 @@ def compare_without_average(directories, image_weights, weights, random_image):
         pair2 = pairs_directory[1]
         pair1_videos = get_images_without_average(pair1, random_image)
         pair2_videos = get_images_without_average(pair2, random_image)
-        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights, weights))
+        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights))
 
     return all_distances
 
@@ -106,7 +106,7 @@ def get_images_average(directory):
     return img_dict
 
 
-def compare_average(directories, image_weights, weights):
+def compare_average(directories, image_weights):
     all_distances = []
 
     for pair_directory in get_directory(directories):
@@ -118,25 +118,25 @@ def compare_average(directories, image_weights, weights):
         pair2 = pairs_directory[1]
         pair1_videos = get_images_average(pair1)
         pair2_videos = get_images_average(pair2)
-        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights, weights))
+        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights))
 
     return all_distances
 
 
 def distance_without_average(random_image):
-    image_weights, weights = h.get_hog_weights()
+    image_weights = h.get_hog_weights()
 
-    distances_true = compare_without_average(DIRECTORY_TRUE, image_weights, weights, random_image)
-    distances_false = compare_without_average(DIRECTORY_FALSE, image_weights, weights, random_image)
+    distances_true = compare_without_average(DIRECTORY_TRUE, image_weights, random_image)
+    distances_false = compare_without_average(DIRECTORY_FALSE, image_weights, random_image)
 
     return distances_true, distances_false
 
 
 def distance_average():
-    image_weights, weights = h.get_hog_weights()
+    image_weights = h.get_hog_weights()
 
-    distances_true = compare_average(DIRECTORY_TRUE, image_weights, weights)
-    distances_false = compare_average(DIRECTORY_FALSE, image_weights, weights)
+    distances_true = compare_average(DIRECTORY_TRUE, image_weights)
+    distances_false = compare_average(DIRECTORY_FALSE, image_weights)
 
     return distances_true, distances_false
 
