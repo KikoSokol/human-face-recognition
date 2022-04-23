@@ -1,3 +1,4 @@
+import math
 import os
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -6,7 +7,7 @@ import cv2
 from scipy.spatial import distance
 import pca as p
 import random
-from sklearn.decomposition import PCA
+import seaborn as sns
 
 DIRECTORY_TRUE = "TRUE/ALL/"
 DIRECTORY_FALSE = "FALSE/ALL/"
@@ -144,14 +145,17 @@ def distance_average():
     return distances_true, distances_false
 
 
-def compute_roc_tpr_fpr(distances_true, trashold):
+def compute_roc_tpr_fpr(distances_true, trashold, is_avg):
     tpr_or_fpr = 0
 
     for dist in distances_true:
         if dist < trashold:
             tpr_or_fpr += 1
 
-    return tpr_or_fpr / len(distances_true)
+    if is_avg:
+        return tpr_or_fpr / len(distances_true)
+    else:
+        return tpr_or_fpr
 
 
 def compute_roc_data(distances):
@@ -163,26 +167,53 @@ def compute_roc_data(distances):
     all.extend(distances[0])
     all.extend(distances[1])
 
+    best_distance = 0
+    tp = 0
+    fp = 0
+
     # min distance
     trashold_for_min = min(all)
     trasholds.append(trashold_for_min)
-    tprs.append(compute_roc_tpr_fpr(distances[0], trashold_for_min))
-    fprs.append(compute_roc_tpr_fpr(distances[1], trashold_for_min))
+    tpr = compute_roc_tpr_fpr(distances[0], trashold_for_min, True)
+    fpr = compute_roc_tpr_fpr(distances[1], trashold_for_min, True)
+    tprs.append(tpr)
+    fprs.append(fpr)
+
+    best_distance = math.dist([tpr, fpr], [1, 0])
+    tp = compute_roc_tpr_fpr(distances[0], trashold_for_min, False)
+    fp = compute_roc_tpr_fpr(distances[1], trashold_for_min, False)
 
     iteration = 20
     for trashold in range(int(min(all) + iteration), int(max(all)), iteration):
         trasholds.append(trashold)
-        tprs.append(compute_roc_tpr_fpr(distances[0], trashold))
-        fprs.append(compute_roc_tpr_fpr(distances[1], trashold))
+        tpr = compute_roc_tpr_fpr(distances[0], trashold, True)
+        fpr = compute_roc_tpr_fpr(distances[1], trashold, True)
+        tprs.append(tpr)
+        fprs.append(fpr)
+        dst = math.dist([tpr, fpr], [1, 0])
+        if dst < best_distance:
+            best_distance = dst
+            tp = compute_roc_tpr_fpr(distances[0], trashold, False)
+            fp = compute_roc_tpr_fpr(distances[1], trashold, False)
 
-    #     max distance
+    # max distance
     trashold_for_max = max(all)
     trasholds.append(trashold_for_max)
-    tprs.append(compute_roc_tpr_fpr(distances[0], trashold_for_max))
-    fprs.append(compute_roc_tpr_fpr(distances[1], trashold_for_max))
+    tpr = compute_roc_tpr_fpr(distances[0], trashold_for_max, True)
+    fpr = compute_roc_tpr_fpr(distances[1], trashold_for_max, True)
+    tprs.append(tpr)
+    fprs.append(fpr)
+    dst = math.dist([tpr, fpr], [1, 0])
+    if dst < best_distance:
+        best_distance = dst
+        tp = compute_roc_tpr_fpr(distances[0], trashold_for_max, False)
+        fp = compute_roc_tpr_fpr(distances[1], trashold_for_max, False)
 
     print("len", len(trasholds))
-    return trasholds, tprs, fprs
+
+    tn = len(distances[1]) - fp
+    fn = len(distances[0]) - tp
+    return trasholds, tprs, fprs, (tp, tn, fp, fn)
 
 
 def show_roc(roc_data_all, roc_data_average, roc_data_random):
@@ -225,9 +256,24 @@ def show_roc(roc_data_all, roc_data_average, roc_data_random):
     plt.show()
 
 
+def confusion_matrix(data):
+    a = sns.heatmap([[data[0], data[3]], [data[2], data[1]]], annot=True, cmap='Blues', fmt='g')
+
+    a.set_xlabel('Predicted Values')
+    a.set_ylabel('Actual Values')
+
+    a.xaxis.set_ticklabels(['True', 'False'])
+    a.yaxis.set_ticklabels(['True', 'False'])
+
+    plt.show()
+
+
 all = compute_roc_data(distance_without_average(False))
 average = compute_roc_data(distance_average())
 random_image = compute_roc_data(distance_without_average(True))
 
 
 show_roc(all, average, random_image)
+confusion_matrix(all[3])
+confusion_matrix(average[3])
+confusion_matrix(random_image[3])
