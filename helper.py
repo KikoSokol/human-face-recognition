@@ -202,6 +202,13 @@ def save_image_weight_to_csv(file_name, image_weights):
 
     for name, weight in image_weights.items():
         if "AVERAGE" not in name:
-            write.writerow([name, weight])
+            row = "["
+            for i in range(len(weight)):
+                if i != len(weight) - 1:
+                    row = row + str(weight[i]) + "_"
+                else:
+                    row = row + str(weight[i])
+            row = row + "]"
+            write.writerow([name, row])
 
     file.close()
