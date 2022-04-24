@@ -4,6 +4,7 @@ import numpy as np
 from numpy import asarray
 import cv2
 from sklearn.decomposition import PCA
+import helper as hp
 
 DIRECTORY_TRUE = "TRUE/ALL/"
 DIRECTORY_FALSE = "FALSE/ALL/"
@@ -178,4 +179,6 @@ def get_pca_weights():
     directories = [DIRECTORY_TRUE, DIRECTORY_FALSE]
     data = get_all_data_for_pca(directories)
 
-    return pca(directories, data)
+    pca_data = pca(directories, data)
+    hp.save_image_weight_to_csv("images_weights.csv", pca_data[0])
+    return pca_data

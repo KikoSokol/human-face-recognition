@@ -194,3 +194,14 @@ def create_summary_info(main_directory, category_directory, directory, name, typ
                     "WORST-FRAME-LE", "WORST-FRAME-LE-VALUE", "WORST-FRAME-PE", "WORST-FRAME-PE-VALUE"])
     write.writerows(data)
     file.close()
+
+
+def save_image_weight_to_csv(file_name, image_weights):
+    file = open(file_name, "w", newline='')
+    write = csv.writer(file)
+
+    for name, weight in image_weights.items():
+        if "AVERAGE" not in name:
+            write.writerow([name, weight])
+
+    file.close()

@@ -8,6 +8,7 @@ from scipy.spatial import distance
 import pca as p
 import random
 import seaborn as sns
+import time
 
 DIRECTORY_TRUE = "TRUE/ALL/"
 DIRECTORY_FALSE = "FALSE/ALL/"
@@ -64,6 +65,15 @@ def compute_distances(pair1_videos, pair2_videos, image_weights, weights):
     return distances
 
 
+def compute_average_distances(distances):
+    sum = 0
+
+    for i in distances:
+        sum += i
+
+    return sum / len(distances)
+
+
 def compare_without_average(directories, image_weights, weights, random_image):
     all_distances = []
 
@@ -76,7 +86,9 @@ def compare_without_average(directories, image_weights, weights, random_image):
         pair2 = pairs_directory[1]
         pair1_videos = get_images_without_average(pair1, random_image)
         pair2_videos = get_images_without_average(pair2, random_image)
-        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights, weights))
+        dist = compute_distances(pair1_videos, pair2_videos, image_weights, weights)
+        # all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights, weights))
+        all_distances.append(compute_average_distances(dist))
 
     return all_distances
 
@@ -257,7 +269,7 @@ def show_roc(roc_data_all, roc_data_average, roc_data_random):
 
 
 def confusion_matrix(data):
-    a = sns.heatmap([[data[0], data[3]], [data[2], data[1]]], annot=True, cmap='Blues', fmt='g')
+    a = sns.heatmap([[data[0], data[3]], [data[2], data[1]]], annot=True, cmap='Greens', fmt='g')
 
     a.set_xlabel('Predicted Values')
     a.set_ylabel('Actual Values')
@@ -272,8 +284,10 @@ all = compute_roc_data(distance_without_average(False))
 average = compute_roc_data(distance_average())
 random_image = compute_roc_data(distance_without_average(True))
 
-
+start_time_all = time.perf_counter()
 show_roc(all, average, random_image)
 confusion_matrix(all[3])
 confusion_matrix(average[3])
 confusion_matrix(random_image[3])
+elapsed_time_all = time.perf_counter() - start_time_all
+print("Celkový čas: ", elapsed_time_all)
