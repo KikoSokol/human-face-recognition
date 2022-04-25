@@ -46,7 +46,7 @@ def get_images_without_average(directory, random_image):
         image = image_files[i]
         img = Image.open(image)
         img = asarray(img)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = img.flatten()
         img_dict[image] = img
 

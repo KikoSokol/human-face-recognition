@@ -28,7 +28,7 @@ def get_pca_from_image_directory(directory, pair_img, pair_labels, label):
     for image in get_files(directory):
         img = Image.open(image)
         img = asarray(img)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         pair_img.append(img.flatten())
         pair_labels.append(label)
 
@@ -38,7 +38,7 @@ def get_images(directory):
     for image in get_files(directory):
         img = Image.open(image)
         img = asarray(img)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         images[image] = img
 
     return images
@@ -47,7 +47,7 @@ def get_images(directory):
 def get_image(name):
     img = Image.open(name)
     img = asarray(img)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
 
 
