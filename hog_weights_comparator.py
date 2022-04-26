@@ -51,17 +51,67 @@ def get_images_without_average(directory, random_image):
 def compute_distances(pair1_videos, pair2_videos, image_weights):
     distances = []
 
+    min_distance = 9999999999999999999999999999999999999999.0
+
+    img_dist1 = None
+    img_dist2 = None
+
     for file_name_1, img1 in pair1_videos.items():
         for file_name_2, img2 in pair2_videos.items():
             img1_weight = image_weights[file_name_1]
             img2_weight = image_weights[file_name_2]
-            distances.append(distance.euclidean(img1_weight, img2_weight))
+            dist = distance.euclidean(img1_weight, img2_weight)
+            distances.append(dist)
+            if dist < min_distance:
+                min_distance = dist
+                img_dist1 = file_name_1
+                img_dist2 = file_name_2
 
-    return distances
+    return distances, (img_dist1, img_dist2)
+
+
+def compute_average_distances(distances):
+    sum = 0
+
+    for i in distances:
+        sum += i
+
+    return sum / len(distances)
+
+
+def get_image(image_name):
+    print(image_name)
+    img = Image.open(image_name)
+    img = asarray(img)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = img.flatten()
+
+    return img
+
+
+def print_image_pairs(image_files):
+    # fig = plt.figure(figsize=(10, 7))
+
+    a, image_matrix = plt.subplots(len(image_files), 2)
+
+    index = 0
+    for i in image_files:
+        img1 = get_image(i[0])
+        img2 = get_image(i[1])
+        image_matrix[index, 0].imshow(img1)
+        image_matrix[index, 0].axis('off')
+        image_matrix[index, 1].imshow(img2)
+        image_matrix[index, 1].axis('off')
+        # image_matrix[index, 0] = plt.imshow(img1)
+        # image_matrix[index, 1] = plt.imshow(img2)
+        index += 1
+
+    plt.show()
 
 
 def compare_without_average(directories, image_weights, random_image):
     all_distances = []
+    image_pairs = []
 
     for pair_directory in get_directory(directories):
         pairs_directory = []
@@ -72,7 +122,12 @@ def compare_without_average(directories, image_weights, random_image):
         pair2 = pairs_directory[1]
         pair1_videos = get_images_without_average(pair1, random_image)
         pair2_videos = get_images_without_average(pair2, random_image)
-        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights))
+        dist, img_pair = compute_distances(pair1_videos, pair2_videos, image_weights)
+        all_distances.append(compute_average_distances(dist))
+        image_pairs.append(img_pair)
+
+    if not random_image:
+        print_image_pairs(image_pairs)
 
     return all_distances
 
@@ -108,6 +163,7 @@ def get_images_average(directory):
 
 def compare_average(directories, image_weights):
     all_distances = []
+    image_pairs = []
 
     for pair_directory in get_directory(directories):
         pairs_directory = []
@@ -118,7 +174,11 @@ def compare_average(directories, image_weights):
         pair2 = pairs_directory[1]
         pair1_videos = get_images_average(pair1)
         pair2_videos = get_images_average(pair2)
-        all_distances.extend(compute_distances(pair1_videos, pair2_videos, image_weights))
+        dist, img_pair = compute_distances(pair1_videos, pair2_videos, image_weights)
+        all_distances.extend(dist)
+        image_pairs.append(img_pair)
+
+    # print_image_pairs(image_pairs)
 
     return all_distances
 
@@ -206,8 +266,8 @@ def show_roc(roc_data_all, roc_data_average, roc_data_random):
     lw = 2
     # ALL
     plt.plot(
-        roc_data_all[2],
         roc_data_all[1],
+        roc_data_all[2],
         color="darkorange",
         lw=lw,
         # label="ROC curve (area = %0.2f)" % roc_auc[2],
@@ -224,8 +284,8 @@ def show_roc(roc_data_all, roc_data_average, roc_data_random):
 
     # RANDOM
     plt.plot(
-        roc_data_random[1],
         roc_data_random[2],
+        roc_data_random[1],
         color="red",
         lw=lw,
         # label="ROC curve (area = %0.2f)" % roc_auc[2],
@@ -236,7 +296,7 @@ def show_roc(roc_data_all, roc_data_average, roc_data_random):
     plt.ylim([0.0, 1.05])
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
-    plt.title("Receiver operating characteristic example")
+    plt.title("ROC - HOG")
     plt.legend(loc="lower right")
     plt.show()
 
